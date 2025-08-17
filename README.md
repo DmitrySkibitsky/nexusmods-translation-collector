@@ -19,5 +19,10 @@ php index.php
 If the script hangs (can be identified by the process bar), restart the script. 
 The mod processing will start from the last mod where the script stopped.
 
+Script searches for translation links 
+using the attribute: class="sortme flag flag-[lang]"
+Example: class="sortme flag flag-Ukrainian"
+
+
 ### Result
 `results/mods.csv` - contains the entire list of mods + links to mods that have translations

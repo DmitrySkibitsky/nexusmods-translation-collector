@@ -22,6 +22,8 @@ class CollectModsWithTranslationAction
         $langs = array_map('trim', $langs);
         $langs = array_filter($langs);
 
+        $timeBetweenRequests = (int) env('TIMEOUT_BETWEEN_REQUESTS', 1);
+
         foreach ($collectionModsDTO->mods as $index => $mod) {
             $client = Client::createFirefoxClient();
 
@@ -38,6 +40,15 @@ class CollectModsWithTranslationAction
 
             $response = $client
                 ->request('GET', $modUrl);
+
+            $pageContent = $response->html();
+
+            if (str_contains($pageContent, 'DDoS attacks')) {
+                echo "\nWarning about a DDoS attack!";
+                echo "\nIncrease the TIMEOUT_BETWEEN_REQUESTS parameter";
+
+                break;
+            }
 
             $existsTranslation = false;
 
@@ -80,7 +91,7 @@ class CollectModsWithTranslationAction
                     );
             }
 
-            sleep(1);
+            sleep($timeBetweenRequests + array_rand([1, 2, 3, 4, 5, 6]));
         }
 
         $progressBar->finish();
