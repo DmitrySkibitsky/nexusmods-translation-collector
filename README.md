@@ -1,6 +1,5 @@
 ## Description
-Script that collects a list of mods that have been translated 
-based on the nexusmods collection.
+Script that collects mods from a nexusmods collection that have a translation.
 
 ## Required
 - php >= 8.3
