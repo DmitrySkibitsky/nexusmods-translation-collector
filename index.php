@@ -2,6 +2,8 @@
 
 require 'vendor/autoload.php';
 
+set_time_limit(0);
+
 use NexusModsTranslationCollector\Services\NexusModsService as NexusModsService;
 use Symfony\Component\Dotenv\Dotenv as Dotenv;
 
