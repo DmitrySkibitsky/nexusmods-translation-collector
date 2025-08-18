@@ -27,7 +27,8 @@ class CollectModsWithTranslationAction
         foreach ($collectionModsDTO->mods as $mod) {
             $client = Client::createFirefoxClient(
                 options: [
-                    'port' => (int) env('FIREFOX_CLIENT_PORT', 4444)
+                    'port' => (int) env('FIREFOX_CLIENT_PORT', 4444),
+                    'connection_timeout_in_ms' => 20000
                 ]
             );
 
