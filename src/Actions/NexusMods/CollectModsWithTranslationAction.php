@@ -10,6 +10,11 @@ use Symfony\Component\Panther\Client;
 
 class CollectModsWithTranslationAction
 {
+    private Client $client;
+
+    /**
+     * @throws \Exception
+     */
     public function handle(
         CollectionModsDTO $collectionModsDTO
     ): void {
@@ -24,83 +29,88 @@ class CollectModsWithTranslationAction
 
         $timeBetweenRequests = (int) env('TIMEOUT_BETWEEN_REQUESTS', 1);
 
-        foreach ($collectionModsDTO->mods as $mod) {
-            $client = Client::createFirefoxClient(
-                options: [
-                    'port' => (int) env('FIREFOX_CLIENT_PORT', 4444),
-                    'connection_timeout_in_ms' => 20000
-                ]
-            );
+        $this->client = Client::createFirefoxClient(
+            options: [
+                'port' => (int) env('FIREFOX_CLIENT_PORT', 4444),
+                'connection_timeout_in_ms' => 20000
+            ]
+        );
 
-            $modUrl = (new GetModUrlAction())
-                ->handle(
-                    modId: $mod->id,
-                );
+        try {
+            foreach ($collectionModsDTO->mods as $mod) {
+                $modUrl = (new GetModUrlAction())
+                    ->handle(
+                        modId: $mod->id,
+                    );
 
-            echo "\nMod ID: ".$mod->id;
-            echo "\nMod Name: ".$mod->name;
-            echo "\nMod URL: ".$modUrl;
+                echo "\nMod ID: ".$mod->id;
+                echo "\nMod Name: ".$mod->name;
+                echo "\nMod URL: ".$modUrl;
 
-            $progressBar->advance();
+                $progressBar->advance();
 
-            $response = $client
-                ->request('GET', $modUrl);
+                $response = $this
+                    ->client
+                    ->request('GET', $modUrl);
 
-            $pageContent = $response->html();
+                $pageContent = $response->html();
 
-            if (str_contains($pageContent, 'DDoS attacks')) {
-                echo "\nWarning about a DDoS attack!";
-                echo "\nIncrease the TIMEOUT_BETWEEN_REQUESTS parameter";
+                if (str_contains($pageContent, 'DDoS attacks')) {
+                    echo "\nWarning about a DDoS attack!";
+                    echo "\nIncrease the TIMEOUT_BETWEEN_REQUESTS parameter";
 
-                break;
-            }
+                    break;
+                }
 
-            $existsTranslation = false;
+                $existsTranslation = false;
 
-            foreach ($langs as $lang) {
-                $url = null;
+                foreach ($langs as $lang) {
+                    $url = null;
 
-                try {
-                    $url = $response
-                        ->filter(".translation-table a.flag.flag-$lang")
-                        ->attr('href');
-                } catch (\Exception $e) {
-                    $message = $e->getMessage();
-                    if (! str_contains($message, 'The current node list is empty')) {
-                        echo "\n Error: ".$e->getMessage();
+                    try {
+                        $url = $response
+                            ->filter(".translation-table a.flag.flag-$lang")
+                            ->attr('href');
+                    } catch (\Exception $e) {
+                        $message = $e->getMessage();
+                        if (! str_contains($message, 'The current node list is empty')) {
+                            echo "\n Error: ".$e->getMessage();
+                        }
+                    }
+
+                    if ($url !== null) {
+                        $existsTranslation = true;
+
+                        (new PutModDataToResultFileAction())
+                            ->handle(
+                                data: new PutModDataToResultFileDTO(
+                                    modDTO: $mod,
+                                    url: $url,
+                                    language: $lang
+                                )
+                            );
                     }
                 }
 
-                if ($url !== null) {
-                    $existsTranslation = true;
-
+                if (!$existsTranslation) {
                     (new PutModDataToResultFileAction())
                         ->handle(
                             data: new PutModDataToResultFileDTO(
                                 modDTO: $mod,
-                                url: $url,
-                                language: $lang
+                                url: '',
+                                language: ''
                             )
                         );
                 }
+
+                sleep($timeBetweenRequests + array_rand([1, 2, 3, 4, 5]));
             }
 
-            if (!$existsTranslation) {
-                (new PutModDataToResultFileAction())
-                    ->handle(
-                        data: new PutModDataToResultFileDTO(
-                            modDTO: $mod,
-                            url: '',
-                            language: ''
-                        )
-                    );
-            }
+            $progressBar->finish();
+        } catch (\Exception $e) {
+            $this->client->quit();
 
-            $client->quit();
-
-            sleep($timeBetweenRequests + array_rand([1, 2, 3, 4, 5]));
+            throw $e;
         }
-
-        $progressBar->finish();
     }
 }
