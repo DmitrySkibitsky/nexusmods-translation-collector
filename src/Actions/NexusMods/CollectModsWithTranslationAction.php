@@ -29,7 +29,12 @@ class CollectModsWithTranslationAction
 
         $timeBetweenRequests = (int) env('TIMEOUT_BETWEEN_REQUESTS', 1);
 
-        $this->client = Client::createChromeClient();
+        $this->client = Client::createFirefoxClient(
+            options: [
+                'port' => (int) env('FIREFOX_CLIENT_PORT', 4444),
+                'connection_timeout_in_ms' => 20000
+            ]
+        );
 
         try {
             foreach ($collectionModsDTO->mods as $mod) {
