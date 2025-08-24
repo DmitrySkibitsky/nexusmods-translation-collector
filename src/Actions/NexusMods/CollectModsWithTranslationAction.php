@@ -29,15 +29,15 @@ class CollectModsWithTranslationAction
 
         $timeBetweenRequests = (int) env('TIMEOUT_BETWEEN_REQUESTS', 1);
 
-        $this->client = Client::createFirefoxClient(
-            options: [
-                'port' => (int) env('FIREFOX_CLIENT_PORT', 4444),
-                'connection_timeout_in_ms' => 20000
-            ]
-        );
-
         try {
             foreach ($collectionModsDTO->mods as $mod) {
+                $this->client = Client::createFirefoxClient(
+                    options: [
+                        'port' => (int) env('FIREFOX_CLIENT_PORT', 4444),
+                        'connection_timeout_in_ms' => 20000
+                    ]
+                );
+
                 $modUrl = (new GetModUrlAction())
                     ->handle(
                         modId: $mod->id,
@@ -103,12 +103,17 @@ class CollectModsWithTranslationAction
                         );
                 }
 
+                $this->client->quit();
+
+                gc_collect_cycles();
+
                 sleep($timeBetweenRequests + array_rand([1, 2, 3, 4, 5]));
             }
-
             $progressBar->finish();
         } catch (\Exception $e) {
             $this->client->quit();
+
+            $progressBar->finish();
 
             throw $e;
         }
