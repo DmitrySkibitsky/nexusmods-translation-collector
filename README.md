@@ -4,7 +4,7 @@ Script that collects mods from a nexusmods collection that have a translation.
 ## Required
 - php >= 8.3
 - composer
-- firefox + geckodriver
+- chromium + chromedriver
 
 ## Install
 ```bash
